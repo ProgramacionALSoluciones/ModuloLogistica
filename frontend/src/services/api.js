@@ -22,6 +22,7 @@ export const liberarPolines = (data) => api.post('/movimientos/liberacion', data
 export const generarFacturacion = (data) => api.post('/facturacion/generar', data);
 export const getRecepcionesPendientes = () => api.get('/recepciones/pendientes');
 export const procesarRecepcion = (data) => api.post('/recepcion', data);
+export const getHistorial = () => api.get('/historial');
 
 // GESTION
 export const getGestionClientesDirectos = () => api.get('/gestion/clientes-directos');

@@ -291,3 +291,30 @@ export const procesarRecepcion = async ({ recepcion_id, cantidad_buenos, cantida
 
   return { success: true, message: 'Recepción procesada.' };
 };
+
+// ─────────────────────────────────────────────────────────────
+// HISTORIAL DE MOVIMIENTOS
+// ─────────────────────────────────────────────────────────────
+export const getHistorial = async ({ rol, entityId }) => {
+  let query = supabase
+    .from('movimiento_polines')
+    .select(`
+      *,
+      cliente_directo (id, nombre),
+      cliente_final (id, nombre),
+      tipo_polin (id, nombre),
+      color_polin (id, nombre)
+    `)
+    .order('fecha_inicio', { ascending: false });
+
+  if (rol === 'CLIENTE_DIRECTO') {
+    query = query.eq('cliente_directo_id', entityId);
+  } else if (rol === 'CLIENTE_FINAL') {
+    query = query.eq('cliente_final_id', entityId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data;
+};
+

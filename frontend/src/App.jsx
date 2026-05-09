@@ -8,6 +8,7 @@ import Recepcion from './pages/Recepcion';
 import Facturacion from './pages/Facturacion';
 import Gestion from './pages/Gestion';
 import Login from './pages/Login';
+import Perfil from './pages/Perfil';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="liberaciones" element={<Liberaciones />} />
+          <Route path="perfil" element={<Perfil />} />
 
           {/* Rutas para Admin y Cliente Directo */}
           <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'CLIENTE_DIRECTO']} />}>

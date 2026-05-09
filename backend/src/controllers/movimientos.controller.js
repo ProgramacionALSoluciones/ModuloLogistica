@@ -122,3 +122,14 @@ export const procesarRecepcion = async (req, res) => {
     res.status(400).json({ success: false, error: error.message });
   }
 };
+
+export const getHistorial = async (req, res) => {
+  try {
+    const { rol, entityId } = req.user || {};
+    const result = await MovimientosService.getHistorial({ rol, entityId });
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
+
