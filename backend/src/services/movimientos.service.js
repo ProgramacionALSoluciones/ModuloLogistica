@@ -109,7 +109,7 @@ export const enviarTransporte = async ({ cliente_directo_id, tipo_polin_id, colo
         color_polin_id,
         cantidad: aDescontar,
         cantidad_restante: aDescontar,
-        tipo_movimiento: 'ENTREGA',      // <-- FIX: evita chk_padre_envio
+        tipo_movimiento: 'ENVIO',
         estado_uso: 'TRANSPORTE',
         movimiento_origen_id: lote.id,
         fecha_inicio: ahora,
@@ -129,6 +129,74 @@ export const enviarTransporte = async ({ cliente_directo_id, tipo_polin_id, colo
     trazabilidad: `Distribuidos en ${movimientos_hijos.length} lotes de origen.`,
     restante_en_origen: totalDisponible - cantidad_enviada
   };
+};
+
+// ─────────────────────────────────────────────────────────────
+// TRANSFERENCIA INTERNA (Entre Almacenamiento y Pull Fijo)
+// ─────────────────────────────────────────────────────────────
+export const realizarTransferenciaInterna = async ({ cliente_directo_id, tipo_polin_id, color_polin_id, cantidad, de_estado, a_estado, fecha_manual }) => {
+  if (de_estado === a_estado) throw new Error('Los estados de origen y destino deben ser diferentes.');
+  if (!['ALMACENAMIENTO', 'PULL_FIJO'].includes(de_estado) || !['ALMACENAMIENTO', 'PULL_FIJO'].includes(a_estado)) {
+    throw new Error('Solo se permiten transferencias entre Almacenamiento y Pull Fijo.');
+  }
+
+  const { data: lotes, error: errGet } = await supabase
+    .from('movimiento_polines')
+    .select('*')
+    .eq('cliente_directo_id', cliente_directo_id)
+    .eq('tipo_polin_id', tipo_polin_id)
+    .eq('color_polin_id', color_polin_id)
+    .eq('estado_uso', de_estado)
+    .is('fecha_fin', null)
+    .order('fecha_inicio', { ascending: true }); // FIFO
+
+  if (errGet) throw new Error(errGet.message);
+
+  let porTransferir = parseInt(cantidad, 10);
+  const disponibleTotal = (lotes || []).reduce((sum, l) => sum + (l.cantidad_restante ?? l.cantidad), 0);
+  if (porTransferir > disponibleTotal) throw new Error(`Inventario insuficiente en ${de_estado}. Disponible: ${disponibleTotal}`);
+
+  const ahora = fecha_manual ? new Date(fecha_manual).toISOString() : new Date().toISOString();
+  const hijos = [];
+
+  for (const lote of lotes) {
+    if (porTransferir <= 0) break;
+    const dispLote = lote.cantidad_restante ?? lote.cantidad;
+    const aMover = Math.min(dispLote, porTransferir);
+    const nuevaRestante = dispLote - aMover;
+
+    // Actualizar origen
+    const { error: errUpd } = await supabase
+      .from('movimiento_polines')
+      .update({ 
+        cantidad_restante: nuevaRestante,
+        fecha_fin: nuevaRestante === 0 ? ahora : null
+      })
+      .eq('id', lote.id);
+    if (errUpd) throw new Error(errUpd.message);
+
+    // Crear destino (hijo)
+    const { data: movHijo, error: errIns } = await supabase
+      .from('movimiento_polines')
+      .insert([{
+        cliente_directo_id,
+        tipo_polin_id,
+        color_polin_id,
+        cantidad: aMover,
+        cantidad_restante: aMover,
+        tipo_movimiento: 'TRANSFERENCIA',
+        estado_uso: a_estado,
+        movimiento_origen_id: lote.id,
+        fecha_inicio: ahora
+      }])
+      .select().single();
+    if (errIns) throw new Error(errIns.message);
+
+    hijos.push(movHijo);
+    porTransferir -= aMover;
+  }
+
+  return hijos;
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -291,6 +359,37 @@ export const procesarRecepcion = async ({ recepcion_id, cantidad_buenos, cantida
         .update({ cantidad_disponible: inv.cantidad_disponible + parseInt(cantidad_buenos, 10) })
         .eq('id', inv.id);
     }
+
+    // 4. Crear registro en movimiento_polines para el historial como 'DEVOLUCION'
+    await supabase.from('movimiento_polines').insert([{
+      cliente_directo_id: rec.movimiento_polines.cliente_directo_id,
+      tipo_polin_id: rec.movimiento_polines.tipo_polin_id,
+      color_polin_id: rec.movimiento_polines.color_polin_id,
+      cantidad: cantidad_buenos,
+      cantidad_restante: 0, // Ya regresó al inventario global, no está "activo" en una cuenta de cliente
+      tipo_movimiento: 'DEVOLUCION',
+      estado_uso: 'ALMACENAMIENTO',
+      movimiento_origen_id: rec.movimiento_origen_id,
+      fecha_inicio: fecha_manual ? new Date(fecha_manual).toISOString() : new Date().toISOString(),
+      fecha_fin: fecha_manual ? new Date(fecha_manual).toISOString() : new Date().toISOString(),
+      remision: remision
+    }]);
+  }
+
+  if (cantidad_siniestrados > 0) {
+    // Registrar pérdida en historial
+    await supabase.from('movimiento_polines').insert([{
+      cliente_directo_id: rec.movimiento_polines.cliente_directo_id,
+      tipo_polin_id: rec.movimiento_polines.tipo_polin_id,
+      color_polin_id: rec.movimiento_polines.color_polin_id,
+      cantidad: cantidad_siniestrados,
+      cantidad_restante: 0,
+      tipo_movimiento: 'SINIESTRO',
+      estado_uso: 'SINIESTRO',
+      movimiento_origen_id: rec.movimiento_origen_id,
+      fecha_inicio: fecha_manual ? new Date(fecha_manual).toISOString() : new Date().toISOString(),
+      fecha_fin: fecha_manual ? new Date(fecha_manual).toISOString() : new Date().toISOString()
+    }]);
   }
 
   return { success: true, message: 'Recepción procesada.' };

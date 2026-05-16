@@ -43,13 +43,7 @@ export const obtenerReferencias = async (userRole, entityIds) => {
   let qMov = supabase
     .from('movimiento_polines')
     .select(`
-      id,
-      cantidad,
-      cantidad_restante,
-      tipo_movimiento,
-      estado_uso,
-      fecha_inicio,
-      movimiento_origen_id,
+      *,
       cliente_directo:cliente_directo_id ( id, nombre ),
       cliente_final:cliente_final_id ( id, nombre ),
       tipo_polin:tipo_polin_id ( id, nombre ),
@@ -80,12 +74,16 @@ export const obtenerReferencias = async (userRole, entityIds) => {
       cantidad: mov.cantidad,
       cantidad_restante: restante,
       es_hijo: !!mov.movimiento_origen_id,
+      cliente_directo_id: mov.cliente_directo_id,
+      tipo_polin_id: mov.tipo_polin_id,
+      color_polin_id: mov.color_polin_id,
       cliente_directo: mov.cliente_directo,
       tipo_polin: mov.tipo_polin,
       color_polin: mov.color_polin,
       cliente_final: mov.cliente_final,
+      cliente_final_id: mov.cliente_final_id,
       fecha_inicio: mov.fecha_inicio,
-      label: `[${mov.estado_uso}] ${restante} ${tipoName} ${colorName} | ${clienteName}${destinoName}`
+      label: `[${mov.estado_uso}] ${restante} ${colorName} | ${clienteName}${destinoName}`
     };
   });
 

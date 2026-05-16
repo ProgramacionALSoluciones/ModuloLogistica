@@ -19,6 +19,7 @@ export const getPolinesCliente = (clienteId) => api.get(`/clientes/${clienteId}/
 export const registrarEntrega = (data) => api.post('/entregas', data);
 export const enviarTransporte = (data) => api.post('/movimientos/transporte', data);
 export const liberarPolines = (data) => api.post('/movimientos/liberacion', data);
+export const realizarTransferencia = (data) => api.post('/movimientos/transferencia', data);
 export const generarFacturacion = (data) => api.post('/facturacion/generar', data);
 export const getRecepcionesPendientes = () => api.get('/recepciones/pendientes');
 export const procesarRecepcion = (data) => api.post('/recepcion', data);

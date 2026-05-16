@@ -136,3 +136,28 @@ export const getHistorial = async (req, res) => {
   }
 };
 
+export const transferenciaInterna = async (req, res) => {
+  try {
+    const { cliente_directo_id, tipo_polin_id, color_polin_id, cantidad, de_estado, a_estado, fecha_manual } = req.body;
+    const { rol: userRole, entityIds = [] } = req.user || {};
+
+    // Seguridad: Si es cliente directo, solo puede transferir de su propia fábrica
+    if (userRole === 'CLIENTE_DIRECTO' && !entityIds.includes(cliente_directo_id)) {
+      throw new Error('No tiene permisos para transferir inventario de otro cliente.');
+    }
+
+    const result = await MovimientosService.realizarTransferenciaInterna({
+      cliente_directo_id,
+      tipo_polin_id,
+      color_polin_id,
+      cantidad,
+      de_estado,
+      a_estado,
+      fecha_manual: userRole === 'ADMIN' ? fecha_manual : null
+    });
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
+

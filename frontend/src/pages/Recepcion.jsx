@@ -127,7 +127,7 @@ const Recepcion = () => {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-800">Liberación desde: {origen}</h3>
                     <p className="text-sm text-gray-500">
-                      Polín: <span className="font-medium text-gray-700">{mov.tipo_polin?.nombre} ({mov.color_polin?.nombre})</span> | 
+                      Polín: <span className="font-medium text-gray-700">{mov.color_polin?.nombre}</span> | 
                       Modalidad Original: {mov.estado_uso}
                     </p>
                     <p className="text-xs text-gray-400 mt-1">Fecha Liberación: {new Date(rec.fecha_liberacion).toLocaleString()}</p>

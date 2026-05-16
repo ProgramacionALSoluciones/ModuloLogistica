@@ -20,15 +20,9 @@ const Dashboard = () => {
           if (data.success) {
             setMovimientos(data.data.movimientos_activos || []);
           }
-        } else if (user?.role === 'CLIENTE_DIRECTO') {
-          // Cliente directo carga automáticamente sus sumatorias desde la API
-          const response = await getPolinesCliente(user.entityId);
-          setEstadisticas(response.data.data);
-        } else {
-          // Admin ve todos
-          // Consultamos todos los clientes directos y sus respectivas sumatorias (o sumatoria global de movimientos)
-          // Para esta demostración, mostramos los lotes globales si el backend lo proveyera o un resumen global.
-          // Usaremos las referencias para calcular sumatorias para el admin.
+        } else if (user?.role === 'CLIENTE_DIRECTO' || user?.role === 'ADMIN') {
+          // Tanto Admin como Cliente Directo pueden usar las referencias (ya filtradas en el backend)
+          // para calcular sus estadísticas globales/consolidadas.
           const { data } = await getReferencias();
           if (data.success) {
             const movs = data.data.movimientos_activos || [];
@@ -90,10 +84,12 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Tabla global para Admin */}
-      {user?.role === 'ADMIN' && (
+      {/* Tabla global para Admin y Cliente Directo con desglose */}
+      {(user?.role === 'ADMIN' || user?.role === 'CLIENTE_DIRECTO') && (
         <div className="mt-8">
-          <h2 className="text-lg font-bold text-gray-700 mb-4">Inventario Global de Clientes</h2>
+          <h2 className="text-lg font-bold text-gray-700 mb-4">
+            {user?.role === 'ADMIN' ? 'Inventario Global de Clientes' : 'Desglose de Inventario por Planta'}
+          </h2>
           <div className="overflow-x-auto shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
             <table className="min-w-full divide-y divide-gray-300">
               <thead className="bg-gray-50">

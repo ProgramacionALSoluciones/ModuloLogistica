@@ -55,7 +55,7 @@ const Devoluciones = () => {
 
         const lotes_agrupados = Object.values(agrupados).map(g => ({
           ...g,
-          label: `[${g.estado_uso}] Cliente: ${g.dueño_nombre} | Polín: ${g.tipo_nombre} (${g.color_nombre}) | Disponible: ${g.cantidad_restante}`
+          label: `[${g.estado_uso}] Cliente: ${g.dueño_nombre} | Disponible: ${g.cantidad_restante} (${g.color_nombre})`
         }));
 
         setReferencias({ movimientos_activos: lotes_agrupados });

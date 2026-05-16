@@ -1,41 +1,39 @@
 import { useState, useEffect } from 'react';
-import { enviarTransporte, getReferencias } from '../services/api';
+import { realizarTransferencia, getReferencias } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import ConfirmModal from '../components/ConfirmModal';
 
-const Transporte = () => {
+const Transferencias = () => {
   const [formData, setFormData] = useState({
     grupo_origen: '',
-    cliente_final_id: '',
-    cantidad_enviada: '',
-    fecha_manual: '',
-    orden_compra: ''
+    cantidad: '',
+    fecha_manual: ''
   });
   const { user } = useAuth();
   const [showConfirm, setShowConfirm] = useState(false);
   const [movSeleccionado, setMovSeleccionado] = useState(null);
   const [mensaje, setMensaje] = useState({ tipo: '', texto: '' });
   const [referencias, setReferencias] = useState({
-    movimientos_activos: [],
-    clientes_finales: []
+    movimientos_activos: []
   });
 
   const fetchReferencias = async () => {
     try {
       const { data } = await getReferencias();
       if (data.success) {
-        // Solo movimientos en ALMACENAMIENTO o PULL_FIJO con cantidad_restante > 0 y que sean raíz (no hijos)
+        // Solo movimientos en ALMACENAMIENTO o PULL_FIJO con cantidad_restante > 0
         const disponibles = data.data.movimientos_activos.filter(
           m => ['ALMACENAMIENTO', 'PULL_FIJO'].includes(m.estado_uso) && m.cantidad_restante > 0
         );
 
-        // Agrupar inventario por cliente, tipo de polín y color
+        // Agrupar inventario por estado_uso, cliente, tipo de polín y color
         const agrupados = disponibles.reduce((acc, mov) => {
           if (!mov.cliente_directo || !mov.tipo_polin || !mov.color_polin) return acc;
-          const key = `${mov.cliente_directo_id}|${mov.tipo_polin_id}|${mov.color_polin_id}`;
+          const key = `${mov.estado_uso}|${mov.cliente_directo_id}|${mov.tipo_polin_id}|${mov.color_polin_id}`;
           if (!acc[key]) {
             acc[key] = {
               id: key,
+              estado_uso: mov.estado_uso,
               cliente_directo_id: mov.cliente_directo_id,
               tipo_polin_id: mov.tipo_polin_id,
               color_polin_id: mov.color_polin_id,
@@ -51,12 +49,11 @@ const Transporte = () => {
 
         const lotes_agrupados = Object.values(agrupados).map(g => ({
           ...g,
-          label: `Cliente: ${g.cliente_nombre} | Cantidad: ${g.cantidad_restante} (${g.color_nombre})`
+          label: `[${g.estado_uso}] Cliente: ${g.cliente_nombre} | Cantidad: ${g.cantidad_restante} (${g.color_nombre})`
         }));
 
         setReferencias({
-          movimientos_activos: lotes_agrupados,
-          clientes_finales: data.data.clientes_finales || []
+          movimientos_activos: lotes_agrupados
         });
       }
     } catch (err) {
@@ -75,7 +72,7 @@ const Transporte = () => {
     setFormData(prev => ({
       ...prev,
       grupo_origen: id,
-      cantidad_enviada: mov ? mov.cantidad_restante : ''
+      cantidad: mov ? mov.cantidad_restante : ''
     }));
   };
 
@@ -87,29 +84,24 @@ const Transporte = () => {
     setShowConfirm(false);
     setMensaje({ tipo: '', texto: '' });
     try {
-      const result = await enviarTransporte({
+      const a_estado = movSeleccionado.estado_uso === 'ALMACENAMIENTO' ? 'PULL_FIJO' : 'ALMACENAMIENTO';
+      
+      await realizarTransferencia({
         cliente_directo_id: movSeleccionado.cliente_directo_id,
         tipo_polin_id: movSeleccionado.tipo_polin_id,
         color_polin_id: movSeleccionado.color_polin_id,
-        cliente_final_id: formData.cliente_final_id,
-        cantidad_enviada: parseInt(formData.cantidad_enviada, 10),
-        orden_compra: formData.orden_compra
+        de_estado: movSeleccionado.estado_uso,
+        a_estado: a_estado,
+        cantidad: parseInt(formData.cantidad, 10),
+        fecha_manual: user?.role === 'ADMIN' ? formData.fecha_manual : null
       });
-      const { restante_en_origen } = result.data.data;
-      const origen_cerrado = restante_en_origen === 0;
 
-      const msg = origen_cerrado
-        ? 'Inventario completo enviado a transporte.'
-        : `Envío parcial registrado. Quedan ${restante_en_origen} unidades en almacenamiento / pull fijo para este grupo.`;
-
-      setMensaje({ tipo: 'success', texto: msg });
-      setFormData({ grupo_origen: '', cliente_final_id: '', cantidad_enviada: '', fecha_manual: '', orden_compra: '' });
+      setMensaje({ tipo: 'success', texto: `Transferencia realizada con éxito hacia ${a_estado}.` });
+      setFormData({ grupo_origen: '', cantidad: '', fecha_manual: '' });
       setMovSeleccionado(null);
-
-      // Actualizar referencias completas desde el backend
       fetchReferencias();
     } catch (err) {
-      setMensaje({ tipo: 'error', texto: 'Error al enviar a transporte. ' + (err.response?.data?.error || err.message) });
+      setMensaje({ tipo: 'error', texto: 'Error al realizar transferencia: ' + (err.response?.data?.error || err.message) });
     }
   };
 
@@ -120,9 +112,9 @@ const Transporte = () => {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-gray-800 border-b pb-2">Enviar a Cliente Final</h1>
+      <h1 className="text-2xl font-bold text-gray-800 border-b pb-2">Transferencia Interna</h1>
       <p className="text-gray-600 text-sm">
-        Envía polines directamente desde el almacén o pull fijo de un cliente hacia un cliente final. Puedes enviar una cantidad combinada usando el método LIFO.
+        Mueve polines entre Almacenamiento y Pull Fijo para un mismo cliente. Esta operación no afecta la ubicación física, solo la categoría de uso.
       </p>
 
       {mensaje.texto && (
@@ -132,10 +124,9 @@ const Transporte = () => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5 bg-gray-50 p-6 rounded-lg border border-gray-100">
-        {/* Movimiento origen */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Inventario en Almacenamiento / Pull Fijo a Enviar
+            Origen de la Transferencia
           </label>
           <select
             name="grupo_origen"
@@ -144,79 +135,42 @@ const Transporte = () => {
             value={formData.grupo_origen}
             onChange={handleMovimientoChange}
           >
-            <option value="">-- Seleccione el Inventario Disponible --</option>
+            <option value="">-- Seleccione el Inventario --</option>
             {referencias.movimientos_activos.map(mov => (
               <option key={mov.id} value={mov.id}>{mov.label}</option>
             ))}
           </select>
-          {movSeleccionado && (
-            <p className="mt-1 text-xs text-primary-700 font-bold">
-              Disponible para envío total: <strong>{movSeleccionado.cantidad_restante}</strong> unidades
-            </p>
-          )}
         </div>
 
-        {/* Cantidad a enviar */}
+        {movSeleccionado && (
+          <div className="bg-white p-4 rounded border border-primary-100 shadow-sm animate-fadeIn">
+            <p className="text-sm">
+              Se transferirá desde <strong>{movSeleccionado.estado_uso}</strong> hacia <strong>{movSeleccionado.estado_uso === 'ALMACENAMIENTO' ? 'PULL_FIJO' : 'ALMACENAMIENTO'}</strong>
+            </p>
+          </div>
+        )}
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Cantidad a Enviar
+            Cantidad a Transferir
           </label>
           <input
             type="number"
-            name="cantidad_enviada"
+            name="cantidad"
             required
             min="1"
             max={movSeleccionado?.cantidad_restante || undefined}
             className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-            value={formData.cantidad_enviada}
+            value={formData.cantidad}
             onChange={handleChange}
             placeholder={movSeleccionado ? `Máx. ${movSeleccionado.cantidad_restante}` : 'Seleccione un origen primero'}
-          />
-          {movSeleccionado && parseInt(formData.cantidad_enviada, 10) < movSeleccionado.cantidad_restante && formData.cantidad_enviada !== '' && (
-            <p className="mt-1 text-xs text-amber-600">
-              Envío parcial — {movSeleccionado.cantidad_restante - parseInt(formData.cantidad_enviada, 10)} unidades quedarán en almacenamiento / pull fijo.
-            </p>
-          )}
-        </div>
-
-        {/* Cliente final */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Cliente Final (Destino)
-          </label>
-          <select
-            name="cliente_final_id"
-            required
-            className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 p-2 border bg-white"
-            value={formData.cliente_final_id}
-            onChange={handleChange}
-          >
-            <option value="">-- Seleccione un Cliente Final --</option>
-            {referencias.clientes_finales.map(cliente => (
-              <option key={cliente.id} value={cliente.id}>{cliente.nombre}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Orden de compra */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Orden de Compra (OC)
-          </label>
-          <input
-            type="text"
-            name="orden_compra"
-            className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 p-2 border"
-            value={formData.orden_compra}
-            onChange={handleChange}
-            placeholder="Ingrese la Orden de Compra"
           />
         </div>
 
         {user?.role === 'ADMIN' && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fecha Manual (Opcional - Operación a destiempo)
+              Fecha Manual (Opcional)
             </label>
             <input
               type="datetime-local"
@@ -225,7 +179,6 @@ const Transporte = () => {
               value={formData.fecha_manual}
               onChange={handleChange}
             />
-            <p className="mt-1 text-xs text-gray-500">Si se deja vacío, se usará la fecha y hora actual del servidor.</p>
           </div>
         )}
 
@@ -234,7 +187,7 @@ const Transporte = () => {
             type="submit"
             className="w-full bg-primary-500 hover:bg-primary-600 text-black font-bold py-2.5 px-4 rounded-md transition duration-150 shadow-sm"
           >
-            Enviar a Transporte / Cliente Final
+            Realizar Transferencia
           </button>
         </div>
       </form>
@@ -243,16 +196,16 @@ const Transporte = () => {
         isOpen={showConfirm}
         onClose={() => setShowConfirm(false)}
         onConfirm={handleConfirmSubmit}
-        title="Confirmar Transporte"
+        title="Confirmar Transferencia Interna"
       >
-        <p><strong>Origen:</strong> {movSeleccionado?.cliente_nombre}</p>
-        <p><strong>Destino:</strong> {referencias.clientes_finales?.find(c => c.id == formData.cliente_final_id)?.nombre}</p>
+        <p><strong>Cliente:</strong> {movSeleccionado?.cliente_nombre}</p>
+        <p><strong>De:</strong> {movSeleccionado?.estado_uso}</p>
+        <p><strong>A:</strong> {movSeleccionado?.estado_uso === 'ALMACENAMIENTO' ? 'PULL_FIJO' : 'ALMACENAMIENTO'}</p>
         <p><strong>Polín:</strong> {movSeleccionado?.tipo_nombre} ({movSeleccionado?.color_nombre})</p>
-        <p><strong>Cantidad a Enviar:</strong> {formData.cantidad_enviada}</p>
-        {formData.orden_compra && <p><strong>OC:</strong> {formData.orden_compra}</p>}
+        <p><strong>Cantidad:</strong> {formData.cantidad}</p>
       </ConfirmModal>
     </div>
   );
 };
 
-export default Transporte;
+export default Transferencias;
