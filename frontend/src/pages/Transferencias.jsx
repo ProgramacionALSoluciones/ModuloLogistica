@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { realizarTransferencia, getReferencias } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import ConfirmModal from '../components/ConfirmModal';
+import { generarPDFTransferencia } from '../utils/pdfGenerator';
 
 const Transferencias = () => {
   const [formData, setFormData] = useState({
@@ -97,6 +98,21 @@ const Transferencias = () => {
       });
 
       setMensaje({ tipo: 'success', texto: `Transferencia realizada con éxito hacia ${a_estado}.` });
+      
+      // Generar PDF Automáticamente
+      const ahora = new Date();
+      generarPDFTransferencia({
+        fecha: ahora.toLocaleDateString(),
+        hora: ahora.toLocaleTimeString(),
+        cantidad: formData.cantidad,
+        origen: movSeleccionado.estado_uso,
+        destino: a_estado,
+        usuario: user?.nombre || 'Representante',
+        cliente: movSeleccionado.cliente_nombre,
+        polin: movSeleccionado.tipo_nombre,
+        color: movSeleccionado.color_nombre
+      });
+
       setFormData({ grupo_origen: '', cantidad: '', fecha_manual: '' });
       setMovSeleccionado(null);
       fetchReferencias();
@@ -118,8 +134,20 @@ const Transferencias = () => {
       </p>
 
       {mensaje.texto && (
-        <div className={`p-4 rounded-md ${mensaje.tipo === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
-          {mensaje.texto}
+        <div className={`p-4 rounded-md flex justify-between items-center ${mensaje.tipo === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+          <span>{mensaje.texto}</span>
+          {mensaje.tipo === 'success' && (
+            <button 
+              onClick={() => {
+                // El estado previo se limpió, pero si quisiéramos permitir re-descarga 
+                // necesitaríamos guardar los datos del último movimiento exitoso.
+                // Por ahora, el aviso de éxito es suficiente ya que se descarga automático.
+              }}
+              className="hidden text-xs underline font-bold"
+            >
+              Descargar de nuevo
+            </button>
+          )}
         </div>
       )}
 
