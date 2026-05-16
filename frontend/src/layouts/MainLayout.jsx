@@ -1,134 +1,160 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import logo from '../assets/logo.svg';
+import { 
+  HomeIcon, 
+  TruckIcon, 
+  ArrowPathIcon, 
+  ArrowsRightLeftIcon, 
+  InboxArrowDownIcon, 
+  ClipboardDocumentCheckIcon,
+  DocumentChartBarIcon,
+  UsersIcon,
+  UserCircleIcon,
+  Bars3Icon,
+  XMarkIcon,
+  ArrowLeftOnRectangleIcon,
+  SunIcon,
+  MoonIcon
+} from '@heroicons/react/24/outline';
+import { useTheme } from '../context/ThemeContext';
 
 const MainLayout = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { isDarkMode, toggleTheme } = useTheme();
 
   const navigation = [
-    { name: 'Dashboard', href: '/', roles: ['ADMIN', 'CLIENTE_DIRECTO', 'CLIENTE_FINAL'] },
-    { name: 'Entregas', href: '/entregas', roles: ['ADMIN'] },
-    { name: 'Transporte', href: '/transporte', roles: ['ADMIN', 'CLIENTE_DIRECTO'] },
-    { name: 'Devoluciones', href: '/devoluciones', roles: ['ADMIN', 'CLIENTE_DIRECTO', 'CLIENTE_FINAL'] },
-    { name: 'Transferencias', href: '/transferencias', roles: ['ADMIN', 'CLIENTE_DIRECTO'] },
-    { name: 'Mi Historial', href: '/perfil', roles: ['ADMIN', 'CLIENTE_DIRECTO', 'CLIENTE_FINAL'] },
-    { name: 'Recepción', href: '/recepcion', roles: ['ADMIN'] },
-    { name: 'Facturación', href: '/facturacion', roles: ['ADMIN'] },
-    { name: 'Gestión', href: '/gestion', roles: ['ADMIN'] },
+    { 
+      title: 'General',
+      items: [
+        { name: 'Dashboard', href: '/', icon: HomeIcon, roles: ['ADMIN', 'CLIENTE_DIRECTO', 'CLIENTE_FINAL'] },
+      ]
+    },
+    { 
+      title: 'Operaciones',
+      items: [
+        { name: 'Entregas', href: '/entregas', icon: ClipboardDocumentCheckIcon, roles: ['ADMIN'] },
+        { name: 'Transporte', href: '/transporte', icon: TruckIcon, roles: ['ADMIN', 'CLIENTE_DIRECTO'] },
+        { name: 'Devoluciones', href: '/devoluciones', icon: ArrowPathIcon, roles: ['ADMIN', 'CLIENTE_DIRECTO', 'CLIENTE_FINAL'] },
+        { name: 'Transferencias', href: '/transferencias', icon: ArrowsRightLeftIcon, roles: ['ADMIN', 'CLIENTE_DIRECTO'] },
+        { name: 'Recepción', href: '/recepcion', icon: InboxArrowDownIcon, roles: ['ADMIN'] },
+      ]
+    },
+    { 
+      title: 'Administración',
+      items: [
+        { name: 'Facturación', href: '/facturacion', icon: DocumentChartBarIcon, roles: ['ADMIN'] },
+        { name: 'Gestión', href: '/gestion', icon: UsersIcon, roles: ['ADMIN'] },
+      ]
+    },
+    { 
+      title: 'Usuario',
+      items: [
+        { name: 'Mi Historial', href: '/perfil', icon: UserCircleIcon, roles: ['ADMIN', 'CLIENTE_DIRECTO', 'CLIENTE_FINAL'] },
+      ]
+    }
   ];
 
-  // Filter navigation by role
-  const filteredNav = navigation.filter(item => user && item.roles.includes(user.role));
+  const filterNav = (groups) => {
+    return groups.map(group => ({
+      ...group,
+      items: group.items.filter(item => user && item.roles.includes(user.role))
+    })).filter(group => group.items.length > 0);
+  };
+
+  const filteredGroups = filterNav(navigation);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <nav className="bg-brand-navy border-b border-black shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
-                <img src={logo} alt="Logo" className="h-8 w-8 mr-2" />
-                <span className="text-white font-bold text-xl tracking-wider">AL Soluciones</span>
-              </div>
-              <div className="hidden sm:-my-px sm:ml-6 sm:flex sm:space-x-8">
-                {filteredNav.map((item) => {
+    <div className="min-h-screen bg-gray-100 dark:bg-slate-950 flex transition-colors duration-300">
+      {/* Sidebar para Escritorio */}
+      <aside className={`bg-slate-900 text-white transition-all duration-300 ease-in-out z-30 fixed h-full lg:static ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
+        <div className="h-full flex flex-col">
+          {/* Logo */}
+          <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800">
+            {isSidebarOpen && <span className="font-bold text-xl tracking-tight text-primary-400">AL Soluciones</span>}
+            {!isSidebarOpen && <span className="font-bold text-xl text-primary-400">AL</span>}
+            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="lg:block hidden text-slate-400 hover:text-white">
+              <Bars3Icon className="h-6 w-6" />
+            </button>
+          </div>
+
+          {/* Theme Toggle */}
+          <div className="px-6 py-4 border-b border-slate-800">
+            <button 
+              onClick={toggleTheme}
+              className="flex items-center justify-between w-full text-slate-400 hover:text-white transition-colors"
+            >
+              {isSidebarOpen && <span className="text-xs font-semibold uppercase tracking-wider">Tema</span>}
+              {isDarkMode ? <SunIcon className="h-6 w-6 text-primary-400" /> : <MoonIcon className="h-6 w-6 text-slate-400" />}
+            </button>
+          </div>
+
+          {/* Menú */}
+          <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-8 scrollbar-hide">
+            {filteredGroups.map((group, idx) => (
+              <div key={idx} className="space-y-1">
+                {isSidebarOpen && <h3 className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{group.title}</h3>}
+                {group.items.map((item) => {
                   const isActive = location.pathname === item.href;
                   return (
                     <Link
                       key={item.name}
                       to={item.href}
-                      className={`${isActive
-                        ? 'border-primary-500 text-white'
-                        : 'border-transparent text-gray-300 hover:text-white hover:border-primary-500'
-                        } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200`}
+                      className={`flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                        isActive 
+                        ? 'bg-primary-500 text-slate-900 font-bold shadow-lg shadow-primary-500/20' 
+                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                      }`}
+                      title={!isSidebarOpen ? item.name : ''}
                     >
-                      {item.name}
+                      <item.icon className={`h-6 w-6 flex-shrink-0 ${isActive ? 'text-slate-900' : 'group-hover:text-primary-400'}`} />
+                      {isSidebarOpen && <span className="ml-3 text-sm truncate">{item.name}</span>}
                     </Link>
                   );
                 })}
               </div>
-            </div>
+            ))}
+          </nav>
 
-            {/* User Info & Logout */}
-            <div className="flex items-center space-x-4">
-              {user && (
-                <div className="text-sm text-gray-300 text-right hidden sm:block">
-                  <p className="font-semibold text-white">{user.entityName}</p>
-                  <p className="text-xs text-primary-400 font-bold">{user.role}</p>
-                </div>
-              )}
-              <button
-                onClick={logout}
-                className="hidden sm:inline-flex items-center px-4 py-2 border border-transparent text-xs font-bold rounded text-black bg-primary-500 hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
-              >
-                Salir
-              </button>
-
-              {/* Mobile menu button */}
-              <div className="flex items-center sm:hidden">
-                <button
-                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  className="inline-flex items-center justify-center p-2 rounded-md text-gray-300 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                >
-                  <span className="sr-only">Abrir menú principal</span>
-                  {isMobileMenuOpen ? (
-                    <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  ) : (
-                    <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                  )}
-                </button>
+          {/* User & Logout Section */}
+          <div className="p-4 border-t border-slate-800 bg-slate-900/50">
+            {isSidebarOpen && (
+              <div className="mb-4 px-2">
+                <p className="text-sm font-bold truncate text-slate-200">{user?.entityName || user?.nombre}</p>
+                <p className="text-[10px] uppercase font-bold text-primary-500 tracking-widest">{user?.role}</p>
               </div>
-            </div>
+            )}
+            <button 
+              onClick={logout}
+              className={`flex items-center w-full px-3 py-2 rounded-lg text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors ${!isSidebarOpen ? 'justify-center' : ''}`}
+            >
+              <ArrowLeftOnRectangleIcon className="h-6 w-6" />
+              {isSidebarOpen && <span className="ml-3 text-sm font-medium">Cerrar Sesión</span>}
+            </button>
           </div>
         </div>
+      </aside>
 
-        {/* Mobile Menu Dropdown */}
-        {isMobileMenuOpen && (
-          <div className="sm:hidden border-t border-gray-700">
-            <div className="pt-2 pb-3 space-y-1">
-              {filteredNav.map((item) => {
-                const isActive = location.pathname === item.href;
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`${isActive
-                      ? 'bg-gray-900 border-primary-500 text-white'
-                      : 'border-transparent text-gray-300 hover:bg-gray-700 hover:border-gray-300 hover:text-white'
-                      } block pl-3 pr-4 py-2 border-l-4 text-base font-medium transition-colors`}
-                  >
-                    {item.name}
-                  </Link>
-                );
-              })}
-              <button
-                onClick={logout}
-                className="block w-full text-left pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-red-400 hover:bg-gray-700 hover:text-red-300 transition-colors"
-              >
-                Cerrar Sesión
-              </button>
-            </div>
+      {/* Contenido Principal */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header Móvil */}
+        <header className="lg:hidden h-16 bg-slate-900 flex items-center justify-between px-6 shadow-md fixed w-full top-0 z-40">
+           <span className="font-bold text-xl text-primary-400">AL Soluciones</span>
+           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-white">
+             <Bars3Icon className="h-8 w-8" />
+           </button>
+        </header>
+
+        <main className={`flex-1 p-4 lg:p-8 ${isSidebarOpen ? 'lg:ml-0' : ''} mt-16 lg:mt-0 overflow-y-auto`}>
+          <div className="max-w-7xl mx-auto">
+             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200 dark:shadow-none border border-slate-200 dark:border-slate-800 p-6 lg:p-8 min-h-[calc(100vh-100px)] transition-colors duration-300">
+                <Outlet />
+             </div>
           </div>
-        )}
-      </nav>
-
-      <main className="flex-1 max-w-7xl w-full mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 min-h-[500px]">
-          <Outlet />
-        </div>
-      </main>
-
-      <footer className="bg-white border-t border-gray-200 py-4 text-center text-sm text-gray-500">
-        &copy; {new Date().getFullYear()} AL Soluciones. Todos los derechos reservados.
-      </footer>
+        </main>
+      </div>
     </div>
   );
 };

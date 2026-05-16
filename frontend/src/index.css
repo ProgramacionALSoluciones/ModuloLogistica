@@ -2,16 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@layer base {
+  body {
+    @apply bg-gray-100 text-gray-900 transition-colors duration-300;
+  }
+  
+  .dark body {
+    @apply bg-slate-950 text-slate-100;
+  }
+
+  /* Scrollbar personalizado para modo oscuro */
+  .dark ::-webkit-scrollbar {
+    width: 8px;
+  }
+  .dark ::-webkit-scrollbar-track {
+    background: #0f172a;
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 10px;
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+  }
+
+  /* Estilos automáticos para Modo Oscuro en elementos comunes */
+  .dark h1, .dark h2, .dark h3 {
+    @apply text-slate-100;
+  }
+
+  .dark p, .dark span:not(.text-primary-500):not(.text-indigo-600) {
+    @apply text-slate-400;
+  }
+
+  .dark label {
+    @apply text-slate-300;
+  }
+
+  .dark input, .dark select, .dark textarea {
+    @apply bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500 focus:ring-primary-500 focus:border-primary-500 !important;
+  }
+
+  .dark .bg-white {
+    @apply bg-slate-900 !important;
+  }
+
+  .dark .bg-gray-50 {
+    @apply bg-slate-800/50 !important;
+  }
+
+  .dark .border-gray-100, .dark .border-gray-200, .dark .border-gray-300 {
+    @apply border-slate-800 !important;
+  }
+
+  .dark .text-gray-500, .dark .text-gray-600, .dark .text-gray-700 {
+    @apply text-slate-400 !important;
+  }
+
+  .dark .text-gray-800, .dark .text-gray-900 {
+    @apply text-slate-100 !important;
+  }
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.4s ease-out forwards;
 }
