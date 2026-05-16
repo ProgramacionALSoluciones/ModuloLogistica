@@ -109,7 +109,7 @@ export const enviarTransporte = async ({ cliente_directo_id, tipo_polin_id, colo
         color_polin_id,
         cantidad: aDescontar,
         cantidad_restante: aDescontar,
-        tipo_movimiento: 'ENVIO',
+        tipo_movimiento: 'ENTREGA',
         estado_uso: 'TRANSPORTE',
         movimiento_origen_id: lote.id,
         fecha_inicio: ahora,

@@ -32,13 +32,19 @@ const Dashboard = () => {
             
             // Estadísticas por Cliente (Para desglose independiente)
             const porCliente = {};
+            
+            // Inicializar con todos los clientes asociados (para que aparezcan aunque tengan 0)
+            if (data.data.clientes_directos) {
+              data.data.clientes_directos.forEach(c => {
+                porCliente[c.id] = { nombre: c.nombre, almacenamiento: 0, transporte: 0, pull_fijo: 0 };
+              });
+            }
 
             movs.forEach(m => {
               const cid = m.cliente_directo_id;
-              const cname = m.cliente_directo?.nombre || 'Desconocido';
               
               if (!porCliente[cid]) {
-                porCliente[cid] = { nombre: cname, almacenamiento: 0, transporte: 0, pull_fijo: 0 };
+                porCliente[cid] = { nombre: m.cliente_directo?.nombre || 'Desconocido', almacenamiento: 0, transporte: 0, pull_fijo: 0 };
               }
 
               if (m.estado_uso === 'ALMACENAMIENTO') {

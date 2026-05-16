@@ -87,13 +87,13 @@ const Perfil = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
-                        mov.tipo_movimiento === 'ENTREGA' ? 'bg-green-100 text-green-700' :
-                        mov.tipo_movimiento === 'ENVIO' ? 'bg-blue-100 text-blue-700' :
+                        (mov.tipo_movimiento === 'ENTREGA' && mov.estado_uso !== 'TRANSPORTE') ? 'bg-green-100 text-green-700' :
+                        (mov.tipo_movimiento === 'ENVIO' || (mov.tipo_movimiento === 'ENTREGA' && mov.estado_uso === 'TRANSPORTE')) ? 'bg-blue-100 text-blue-700' :
                         mov.tipo_movimiento === 'TRANSFERENCIA' ? 'bg-purple-100 text-purple-700' :
                         mov.tipo_movimiento === 'DEVOLUCION' ? 'bg-amber-100 text-amber-700' :
                         'bg-gray-100 text-gray-700'
                       }`}>
-                        {mov.tipo_movimiento}
+                        {(mov.tipo_movimiento === 'ENTREGA' && mov.estado_uso === 'TRANSPORTE') ? 'ENVIO' : mov.tipo_movimiento}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-900">
