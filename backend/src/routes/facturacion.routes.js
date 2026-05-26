@@ -4,6 +4,6 @@ import { verificarToken } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-router.post('/facturacion/generar', verificarToken, generarFacturacion);
+router.post('/generar', verificarToken, generarFacturacion);
 
 export default router;

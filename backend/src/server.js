@@ -25,7 +25,7 @@ app.use(express.json());
 
 app.use('/api', authRoutes);
 app.use('/api', movimientosRoutes);
-app.use('/api', facturacionRoutes);
+app.use('/api/facturacion', facturacionRoutes);
 app.use('/api/gestion', gestionRoutes);
 app.use('/api/clientes', clientesRoutes);
 app.use('/api/referencias', referenciasRoutes);
