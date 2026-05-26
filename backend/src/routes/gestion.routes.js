@@ -1,6 +1,7 @@
 import express from 'express';
 import * as GestionController from '../controllers/gestion.controller.js';
 import { verificarToken } from '../middleware/auth.middleware.js';
+import { validarClienteDirecto, validarClienteFinal, validarUsuario } from '../middleware/validacion.middleware.js';
 
 const router = express.Router();
 
@@ -8,19 +9,19 @@ const router = express.Router();
 router.use(verificarToken);
 
 // Clientes Directos
-router.get('/clientes-directos', GestionController.getClientesDirectos);
-router.post('/clientes-directos', GestionController.postClienteDirecto);
-router.put('/clientes-directos/:id', GestionController.putClienteDirecto);
+router.get('/clientes-directos',       GestionController.getClientesDirectos);
+router.post('/clientes-directos',      validarClienteDirecto, GestionController.postClienteDirecto);
+router.put('/clientes-directos/:id',   validarClienteDirecto, GestionController.putClienteDirecto);
 
 // Clientes Finales
-router.get('/clientes-finales', GestionController.getClientesFinales);
-router.post('/clientes-finales', GestionController.postClienteFinal);
-router.put('/clientes-finales/:id', GestionController.putClienteFinal);
+router.get('/clientes-finales',        GestionController.getClientesFinales);
+router.post('/clientes-finales',       validarClienteFinal, GestionController.postClienteFinal);
+router.put('/clientes-finales/:id',    validarClienteFinal, GestionController.putClienteFinal);
 
 // Usuarios
-router.get('/usuarios', GestionController.getUsuarios);
-router.post('/usuarios', GestionController.postUsuario);
-router.put('/usuarios/:id', GestionController.putUsuario);
+router.get('/usuarios',                GestionController.getUsuarios);
+router.post('/usuarios',               validarUsuario, GestionController.postUsuario);
+router.put('/usuarios/:id',            validarUsuario, GestionController.putUsuario);
 
 // Inventario
 router.get('/inventario', GestionController.getInventario);

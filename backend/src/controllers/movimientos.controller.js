@@ -99,13 +99,13 @@ export const getRecepcionesPendientes = async (req, res) => {
 
 export const procesarRecepcion = async (req, res) => {
   try {
-    const { movementId } = req.body;
+    const { recepcion_id } = req.body;
     const { rol: userRole, entityIds = [] } = req.user || {};
 
     // Validar propiedad del movimiento antes de procesar
     if (userRole === 'CLIENTE_DIRECTO') {
        const pendientes = await MovimientosService.getRecepcionesPendientes();
-       const mov = pendientes.find(m => m.id === movementId);
+       const mov = pendientes.find(m => m.id === recepcion_id);
        if (!mov || !entityIds.includes(mov.cliente_directo_id)) {
          throw new Error('No tiene permisos para recibir este lote o el lote no existe.');
        }

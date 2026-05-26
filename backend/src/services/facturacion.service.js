@@ -244,7 +244,8 @@ export const generarFacturacion = async ({ cliente_directo_id, mes, anio, fecha_
       anio: anio || (fecha_desde ? new Date(fecha_desde).getFullYear() : null),
       fecha_desde: fecha_desde || null,
       fecha_hasta: fecha_hasta || null,
-      total_almacenamiento: total_almacenamiento + total_pull_fijo + total_costo_entrega + total_siniestros, // Agrupado para compatibilidad
+      total_almacenamiento: total_almacenamiento + total_pull_fijo + total_costo_entrega,
+      total_siniestros,
       total_transporte,
       total: totalFactura,
       fecha_generacion: new Date().toISOString()

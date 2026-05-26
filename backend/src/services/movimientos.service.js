@@ -360,13 +360,13 @@ export const procesarRecepcion = async ({ recepcion_id, cantidad_buenos, cantida
         .eq('id', inv.id);
     }
 
-    // 4. Crear registro en movimiento_polines para el historial como 'DEVOLUCION'
-    await supabase.from('movimiento_polines').insert([{
+    // Crear registro en movimiento_polines para el historial como 'DEVOLUCION'
+    const { error: errDev } = await supabase.from('movimiento_polines').insert([{
       cliente_directo_id: rec.movimiento_polines.cliente_directo_id,
       tipo_polin_id: rec.movimiento_polines.tipo_polin_id,
       color_polin_id: rec.movimiento_polines.color_polin_id,
       cantidad: cantidad_buenos,
-      cantidad_restante: 0, // Ya regresó al inventario global, no está "activo" en una cuenta de cliente
+      cantidad_restante: 0,
       tipo_movimiento: 'DEVOLUCION',
       estado_uso: 'ALMACENAMIENTO',
       movimiento_origen_id: rec.movimiento_origen_id,
@@ -374,11 +374,12 @@ export const procesarRecepcion = async ({ recepcion_id, cantidad_buenos, cantida
       fecha_fin: fecha_manual ? new Date(fecha_manual).toISOString() : new Date().toISOString(),
       remision: remision
     }]);
+    if (errDev) throw new Error(`Error registrando devolución en historial: ${errDev.message}`);
   }
 
   if (cantidad_siniestrados > 0) {
     // Registrar pérdida en historial
-    await supabase.from('movimiento_polines').insert([{
+    const { error: errSin } = await supabase.from('movimiento_polines').insert([{
       cliente_directo_id: rec.movimiento_polines.cliente_directo_id,
       tipo_polin_id: rec.movimiento_polines.tipo_polin_id,
       color_polin_id: rec.movimiento_polines.color_polin_id,
@@ -390,6 +391,7 @@ export const procesarRecepcion = async ({ recepcion_id, cantidad_buenos, cantida
       fecha_inicio: fecha_manual ? new Date(fecha_manual).toISOString() : new Date().toISOString(),
       fecha_fin: fecha_manual ? new Date(fecha_manual).toISOString() : new Date().toISOString()
     }]);
+    if (errSin) throw new Error(`Error registrando siniestro en historial: ${errSin.message}`);
   }
 
   return { success: true, message: 'Recepción procesada.' };
@@ -399,6 +401,12 @@ export const procesarRecepcion = async ({ recepcion_id, cantidad_buenos, cantida
 // HISTORIAL DE MOVIMIENTOS
 // ─────────────────────────────────────────────────────────────
 export const getHistorial = async ({ rol, entityIds = [] }) => {
+  // Grupo F: Denegar acceso si un rol de cliente no tiene entidades asociadas
+  // (evita devolver TODOS los movimientos del sistema por error de token)
+  if ((rol === 'CLIENTE_DIRECTO' || rol === 'CLIENTE_FINAL') && entityIds.length === 0) {
+    throw new Error('Sin entidades asociadas. Acceso denegado.');
+  }
+
   let query = supabase
     .from('movimiento_polines')
     .select(`

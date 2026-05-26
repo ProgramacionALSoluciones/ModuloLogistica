@@ -1,6 +1,9 @@
+// IMPORTANTE: 'dotenv/config' debe ser el PRIMER import.
+// En ES Modules, los imports se ejecutan antes del cuerpo del módulo.
+// Esto garantiza que process.env esté poblado antes de que supabase.js se inicialice.
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 
 import movimientosRoutes from './routes/movimientos.routes.js';
 import facturacionRoutes from './routes/facturacion.routes.js';
@@ -8,8 +11,6 @@ import clientesRoutes from './routes/clientes.routes.js';
 import referenciasRoutes from './routes/referencias.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import gestionRoutes from './routes/gestion.routes.js';
-
-dotenv.config();
 
 // ── Guardia de arranque: variables de entorno críticas ────────
 if (!process.env.JWT_SECRET || !process.env.SUPABASE_KEY || !process.env.SUPABASE_URL) {
