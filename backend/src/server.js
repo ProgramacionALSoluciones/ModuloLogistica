@@ -13,8 +13,13 @@ import authRoutes from './routes/auth.routes.js';
 import gestionRoutes from './routes/gestion.routes.js';
 
 // ── Guardia de arranque: variables de entorno críticas ────────
-if (!process.env.JWT_SECRET || !process.env.SUPABASE_KEY || !process.env.SUPABASE_URL) {
-  console.error('FATAL: Variables de entorno críticas no definidas (JWT_SECRET, SUPABASE_KEY, SUPABASE_URL). El servidor no puede iniciar.');
+const missingVars = [];
+if (!process.env.JWT_SECRET) missingVars.push('JWT_SECRET');
+if (!process.env.SUPABASE_KEY) missingVars.push('SUPABASE_KEY');
+if (!process.env.SUPABASE_URL) missingVars.push('SUPABASE_URL');
+
+if (missingVars.length > 0) {
+  console.error(`FATAL: Variables de entorno críticas no definidas: ${missingVars.join(', ')}. El servidor no puede iniciar.`);
   process.exit(1);
 }
 
