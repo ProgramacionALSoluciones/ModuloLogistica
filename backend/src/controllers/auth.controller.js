@@ -1,11 +1,8 @@
 import { supabase } from '../config/supabase.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
 
-dotenv.config();
-
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_123';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export const login = async (req, res) => {
   let { email, password } = req.body;
@@ -37,12 +34,7 @@ export const login = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Credenciales inválidas' });
     }
 
-    // 3. Determinar el rol compatible con el frontend (mapping)
-    // El frontend espera ADMIN, CLIENTE_DIRECTO, CLIENTE_FINAL
-    let frontendRole = usuario.rol;
-    if (usuario.rol === 'PERSONAL') frontendRole = 'ADMIN';
-
-    // 4. Determinar entityName y entityIds
+    // 3. Determinar entityName y entityIds
     let entityName = usuario.nombre;
     let entityIds = [];
 
@@ -57,11 +49,11 @@ export const login = async (req, res) => {
     // Por compatibilidad temporal (si solo hay 1)
     const primaryEntityId = entityIds.length > 0 ? entityIds[0] : null;
 
-    // 5. Generar Token JWT
+    // 4. Generar Token JWT
     const token = jwt.sign(
       {
         id: usuario.id,
-        rol: frontendRole,
+        rol: usuario.rol,
         entityId: primaryEntityId,
         entityIds
       },
@@ -69,14 +61,14 @@ export const login = async (req, res) => {
       { expiresIn: '8h' }
     );
 
-    // 6. Retornar datos (sin el password)
+    // 5. Retornar datos (sin el password)
     const { password: _, ...userSession } = usuario;
     res.json({
       success: true,
       token,
       user: {
         ...userSession,
-        role: frontendRole,
+        role: usuario.rol,
         entityName,
         entityId: primaryEntityId,
         entityIds

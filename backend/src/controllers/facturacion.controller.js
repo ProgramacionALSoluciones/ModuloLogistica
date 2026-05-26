@@ -2,8 +2,14 @@ import * as FacturacionService from '../services/facturacion.service.js';
 
 export const generarFacturacion = async (req, res) => {
   try {
+    const { rol: userRole } = req.user || {};
+
+    // Seguridad: Solo el personal administrativo (ADMIN) puede generar facturación
+    if (userRole !== 'ADMIN') {
+      return res.status(403).json({ success: false, error: 'No tiene permisos para generar facturación.' });
+    }
+
     const data = req.body;
-    console.log('Solicitud de facturación:', data);
     const result = await FacturacionService.generarFacturacion(data);
     res.status(201).json({ success: true, data: result });
   } catch (error) {

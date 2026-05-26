@@ -11,6 +11,12 @@ import gestionRoutes from './routes/gestion.routes.js';
 
 dotenv.config();
 
+// ── Guardia de arranque: variables de entorno críticas ────────
+if (!process.env.JWT_SECRET || !process.env.SUPABASE_KEY || !process.env.SUPABASE_URL) {
+  console.error('FATAL: Variables de entorno críticas no definidas (JWT_SECRET, SUPABASE_KEY, SUPABASE_URL). El servidor no puede iniciar.');
+  process.exit(1);
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 

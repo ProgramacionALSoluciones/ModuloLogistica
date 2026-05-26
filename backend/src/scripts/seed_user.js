@@ -2,8 +2,14 @@ import { supabase } from '../config/supabase.js';
 import bcrypt from 'bcryptjs';
 
 async function seedAdmin() {
-  const username = 'admin@polines.com';
-  const plainPassword = 'admin';
+  const username = process.env.SEED_ADMIN_EMAIL || 'admin@polines.com';
+  const plainPassword = process.env.SEED_ADMIN_PASSWORD;
+
+  if (!plainPassword) {
+    console.error('ERROR: Define SEED_ADMIN_PASSWORD en tu .env antes de ejecutar este script.');
+    process.exit(1);
+  }
+
   const hashedPassword = await bcrypt.hash(plainPassword, 10);
   
   const { data, error } = await supabase
@@ -12,8 +18,8 @@ async function seedAdmin() {
       {
         nombre: 'Administrador Sistema',
         email: username,
-        password: hashedPassword, // Note: I assume the column password exists or I should add it
-        rol: 'PERSONAL', // Usando PERSONAL para el administrador
+        password: hashedPassword,
+        rol: 'ADMIN',
         activo: true
       }
     ])
