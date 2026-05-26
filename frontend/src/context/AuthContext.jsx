@@ -7,15 +7,23 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Intentar recuperar el usuario del localStorage al cargar an app
+    // Intentar recuperar el usuario y token del localStorage al cargar la app
     const storedUser = localStorage.getItem('polines_user');
-    if (storedUser) {
+    const storedToken = localStorage.getItem('polines_token');
+    
+    if (storedUser && storedToken) {
       try {
         setUser(JSON.parse(storedUser));
       } catch (e) {
         console.error('Error parsing stored user', e);
         localStorage.removeItem('polines_user');
+        localStorage.removeItem('polines_token');
+        setUser(null);
       }
+    } else {
+      localStorage.removeItem('polines_user');
+      localStorage.removeItem('polines_token');
+      setUser(null);
     }
     setLoading(false);
   }, []);

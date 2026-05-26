@@ -174,7 +174,7 @@ const Gestion = () => {
 
       {error && <div className="text-red-500 bg-red-50 p-3 rounded">{error}</div>}
 
-      <div className="bg-white shadow rounded-lg overflow-hidden border">
+      <div className="bg-white shadow rounded-lg overflow-x-auto border">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             {activeTab === 'directos' && (

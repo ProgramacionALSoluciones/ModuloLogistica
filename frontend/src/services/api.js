@@ -7,10 +7,24 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('polines_token');
   if (token) {
+    config.headers = config.headers || {};
     config.headers['Authorization'] = `Bearer ${token}`;
   }
   return config;
 });
+
+// Interceptor de respuesta para expirar sesión dañada o inválida
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      localStorage.removeItem('polines_user');
+      localStorage.removeItem('polines_token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const loginUser = (credentials) => api.post('/login', credentials);
 

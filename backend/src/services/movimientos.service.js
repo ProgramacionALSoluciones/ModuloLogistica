@@ -414,7 +414,12 @@ export const getHistorial = async ({ rol, entityIds = [] }) => {
       cliente_directo (id, nombre),
       cliente_final (id, nombre),
       tipo_polin (id, nombre),
-      color_polin (id, nombre)
+      color_polin (id, nombre),
+      movimiento_origen:movimiento_origen_id (
+        id,
+        cliente_directo_id,
+        cliente_directo (id, nombre)
+      )
     `)
     .order('fecha_inicio', { ascending: false });
 
@@ -429,7 +434,24 @@ export const getHistorial = async ({ rol, entityIds = [] }) => {
 
   if (!movimientos || movimientos.length === 0) return [];
 
-  const movIds = movimientos.map(m => m.id);
+  // Mapear movimientos para identificar y etiquetar TRASLADOS
+  const mappedMovimientos = movimientos.map(mov => {
+    if (
+      mov.tipo_movimiento === 'TRANSFERENCIA' &&
+      mov.movimiento_origen &&
+      mov.movimiento_origen.cliente_directo_id !== mov.cliente_directo_id
+    ) {
+      return {
+        ...mov,
+        tipo_movimiento: 'TRASLADO',
+        cliente_origen: mov.movimiento_origen.cliente_directo,
+        cliente_destino: mov.cliente_directo
+      };
+    }
+    return mov;
+  });
+
+  const movIds = mappedMovimientos.map(m => m.id);
 
   // Fetch recepciones associated with these movimientos
   const { data: recepciones, error: errRec } = await supabase
@@ -439,11 +461,11 @@ export const getHistorial = async ({ rol, entityIds = [] }) => {
 
   if (errRec) throw new Error(errRec.message);
 
-  const historialCombinado = [...movimientos];
+  const historialCombinado = [...mappedMovimientos];
 
   if (recepciones && recepciones.length > 0) {
     recepciones.forEach(rec => {
-      const parentMov = movimientos.find(m => m.id === rec.movimiento_origen_id);
+      const parentMov = mappedMovimientos.find(m => m.id === rec.movimiento_origen_id);
       if (parentMov) {
         historialCombinado.push({
           id: `dev-${rec.id}`,
